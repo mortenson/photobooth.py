@@ -10,6 +10,8 @@ from PIL import ImageOps
 camera_port = 0
 # Number of frames to ramp-up the camera. 
 ramp_frames = 30
+# Unique key to append to filenames.
+timestamp = time.strftime('%Y%m%d-%H%M%S')
 
 # Note that you will want to keep the row/column count in line with the width
 # and height values to maintain a sensible strip. i.e. One column looks good
@@ -18,13 +20,19 @@ strip_rows = 4
 strip_columns = 2
 strip_width = 1200
 strip_height = 1800
-footer = Image.open('photobooth_footer.png')
+try:
+  footer = Image.open('photobooth_footer.png')
+except IOError:
+  footer = Image.new('RGB', (1, 1), (255,255,255))
 
 # Animated gif settings.
 gif_width = 300
 gif_height = 900
-gif_footer = Image.open('photobooth_gif_footer.png')
 gif_row_gutter = 7
+try:
+  gif_footer = Image.open('photobooth_gif_footer.png')
+except IOError:
+  gif_footer = Image.new('RGB', (1, 1), (255,255,255))
 
 # Determines the space in pixels between columns and rows.
 row_gutter = 15
@@ -119,9 +127,10 @@ def photobooth_sequence(camera):
 
   # Show the strip to the user, this is where you'd put print/save code as well.
   strip.show()
+  strip.save('photobooth_' + timestamp + '.png')
 
   # Write the animated gif to a file.
-  writeGif('test.gif', animated_strip, duration=0.1)
+  writeGif('photobooth_gif_' + timestamp + '.gif', animated_strip, duration=0.1)
 
 while True:
   text = raw_input('Press ENTER to start photobooth sequence, or type "peace" to quit: ')
