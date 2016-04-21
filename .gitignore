@@ -1,0 +1,4 @@
+*.gif
+*.png
+.DS_Store
+*.pyc
