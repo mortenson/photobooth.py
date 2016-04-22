@@ -126,7 +126,6 @@ def photobooth_sequence(camera):
     current_strip.paste(gif_footer, (0, (current_strip.height - gif_footer.height)))
 
   # Show the strip to the user, this is where you'd put print/save code as well.
-  strip.show()
   strip.save('photobooth_' + timestamp + '.png')
 
   # Write the animated gif to a file.
