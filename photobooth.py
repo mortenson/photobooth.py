@@ -1,49 +1,38 @@
 import cv2
-import time
 import sys
+import time
 import PIL
+from photobooth_config import *
 from images2gif import writeGif
+from imgurpython import ImgurClient
+from imgurpython.helpers.error import ImgurClientError
 from PIL import Image
 from PIL import ImageOps
 
-# "0" is the port of your built-in webcam, probably.
-camera_port = 0
-# Number of frames to ramp-up the camera. 
-ramp_frames = 30
-# Unique key to append to filenames.
-timestamp = time.strftime('%Y%m%d-%H%M%S')
-
-# Note that you will want to keep the row/column count in line with the width
-# and height values to maintain a sensible strip. i.e. One column looks good
-# with strip_width = 300, but odd with a wider width.
-strip_rows = 4
-strip_columns = 2
-strip_width = 1200
-strip_height = 1800
+# Attempt to load the footer images, which may not exist.
 try:
-  footer = Image.open('photobooth_footer.png')
+  footer = Image.open(footer)
 except IOError:
   footer = Image.new('RGB', (1, 1), (255,255,255))
 
-# Animated gif settings.
-gif_width = 300
-gif_height = 900
-gif_row_gutter = 7
 try:
-  gif_footer = Image.open('photobooth_gif_footer.png')
+  gif_footer = Image.open(gif_footer)
 except IOError:
   gif_footer = Image.new('RGB', (1, 1), (255,255,255))
 
-# Determines the space in pixels between columns and rows.
-row_gutter = 15
-column_gutter = 10
+def get_imgur_client(client_id, client_secret):
+  try:
+    client = ImgurClient(client_id, client_secret)
+    authorization_url = client.get_auth_url('pin')
+    imgur_pin = raw_input('Please visit %s and enter the pin given to you there: ' % authorization_url)
+    credentials = client.authorize(imgur_pin, 'pin')
+    client.set_user_auth(credentials['access_token'], credentials['refresh_token'])
+  except ImgurClientError as e:
+    print('Imgur error #%d: "%s"' % (e.status_code, e.error_message))
+    print('Proceeding without enabling Imgur integration.')
+    client = False
 
-# How long the script should count down before taking a picture in seconds.
-wait_time = 3
-
-# A silly list determining what columns should have a grayscale effect applied.
-# Ideally this would be a map of common filters - sepiatone, soft focus, etc.
-column_grayscale = (0, 1)
+  return client
 
 # Takes a single picture from the current video capture device.
 def get_image(camera):
@@ -53,6 +42,9 @@ def get_image(camera):
   return image
 
 def photobooth_sequence(camera):
+  # Unique key to append to filenames.
+  timestamp = time.strftime('%Y%m%d-%H%M%S')
+
   strip = Image.new('RGB', (strip_width, strip_height), (255,255,255))
   animated_strip = []
 
@@ -85,7 +77,6 @@ def photobooth_sequence(camera):
         frames.append(frame)
         time.sleep(.25)
     print 'Smile!'
-    time.sleep(.25)
 
     # Grab an image from the webcam.
     image = get_image(camera)
@@ -130,6 +121,17 @@ def photobooth_sequence(camera):
 
   # Write the animated gif to a file.
   writeGif('photobooth_gif_' + timestamp + '.gif', animated_strip, duration=0.1)
+
+  # Upload both files to Imgur.
+  if use_imgur and imgur_client:
+    try:
+      imgur_client.upload_from_path('photobooth_' + timestamp + '.png', imgur_config, False);
+      imgur_client.upload_from_path('photobooth_gif_' + timestamp + '.gif', imgur_config, False);
+    except ImgurClientError as e:
+      print('Imgur error #%d: "%s"' % (e.status_code, e.error_message))
+
+if use_imgur:
+  imgur_client = get_imgur_client(imgur_client_id, imgur_client_secret)
 
 while True:
   text = raw_input('Press ENTER to start photobooth sequence, or type "peace" to quit: ')
