@@ -1,5 +1,7 @@
 # photobooth.py
 
+![Example photobooth strip](example.gif)
+
 Given the complexity of existing photobooth software, and how much I enjoy
 classic photobooths, I decided to script up something that simply takes four
 pictures on a timer and adds them to a strip.
